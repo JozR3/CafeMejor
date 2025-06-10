@@ -202,6 +202,7 @@ function comprarCarrito() {
           dni: usuario.dni || "—",
           direccion: usuario.direccion || "—",
           telefono: usuario.telefono || "—"
+          correo: usuario.correo
         },
         productos: productosFactura,
         total
