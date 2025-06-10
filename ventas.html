@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Cafe El Mejor - Ventas</title>
+  <link rel="stylesheet" href="./main.css">
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+
+    th,
+    td {
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--clr-main);
+      color: white;
+    }
+
+    .contenedor-ventas {
+      padding: 2rem;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+
+<body>
+  <div class="wrapper">
+    <aside>
+      <h1 class="logo">Cafe El Mejor</h1>
+      <a href="./index.html" class="boton-menu">
+        <i class="bi bi-arrow-return-left"></i> Volver
+      </a>
+      <h2>Panel de Ventas</h2>
+    </aside>
+    <main class="contenedor-ventas">
+      <button id="exportar-pdf"
+        style="margin-top: 1rem; background: green; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer;">
+        Exportar a PDF
+      </button>
+      <h2>Historial de ventas</h2>
+      <table id="tabla-ventas">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Fecha</th>
+            <th>Productos</th>
+            <th>Total</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+      <div id="resumen-total" style="margin-top: 1.5rem; font-weight: bold; font-size: 1.1rem;"></div>
+    </main>
+  </div>
+
+  <script>
+    const isAdmin = localStorage.getItem("isAdmin") === "true";
+    if (!isAdmin) {
+      alert("Acceso denegado. Esta sección es solo para administradores.");
+      window.location.href = "index.html";
+    }
+
+    const ventas = JSON.parse(localStorage.getItem("ventas")) || [];
+    const tbody = document.querySelector("#tabla-ventas tbody");
+
+    // Cargar precios actuales de productos
+    fetch("./productos.json")
+      .then(res => res.json())
+      .then(base => {
+        const agregados = JSON.parse(localStorage.getItem("productos-agregados")) || [];
+        const todosLosProductos = [...base, ...agregados];
+
+        ventas.forEach((venta, index) => {
+          const fila = document.createElement("tr");
+          const tdUsuario = document.createElement("td");
+          tdUsuario.textContent = venta.usuario;
+          const tdFecha = document.createElement("td");
+          tdFecha.textContent = venta.fecha;
+          const tdProductos = document.createElement("td");
+          let total = 0;
+          tdProductos.innerHTML = venta.productos.map(p => {
+            const prod = todosLosProductos.find(x => x.id === p.id);
+            const precio = prod?.precio || 0;
+            const subtotal = precio * p.cantidad;
+            const subtotalPorProducto = precio
+            total += subtotal;
+            return `${p.titulo} (x${p.cantidad}) - $${subtotalPorProducto}`;
+          }).join("<br>");
+
+          const tdTotal = document.createElement("td");
+          tdTotal.textContent = `$${total}`;
+
+          const tdEliminar = document.createElement("td");
+          const btnEliminar = document.createElement("button");
+          btnEliminar.textContent = "Eliminar";
+          btnEliminar.style.background = "#dc3545";
+          btnEliminar.style.color = "white";
+          btnEliminar.style.border = "none";
+          btnEliminar.style.padding = "6px 10px";
+          btnEliminar.style.borderRadius = "5px";
+          btnEliminar.style.cursor = "pointer";
+          btnEliminar.addEventListener("click", () => {
+            if (confirm("¿Deseas eliminar esta venta?")) {
+              ventas.splice(index, 1);
+              localStorage.setItem("ventas", JSON.stringify(ventas));
+              location.reload();
+            }
+          });
+          tdEliminar.appendChild(btnEliminar);
+
+          fila.appendChild(tdUsuario);
+          fila.appendChild(tdFecha);
+          fila.appendChild(tdProductos);
+          fila.appendChild(tdTotal);
+          fila.appendChild(tdEliminar);
+
+          tbody.appendChild(fila);
+        });
+
+        const totalGeneral = ventas.reduce((total, venta) => {
+          return total + venta.productos.reduce((subtotal, p) => {
+            const prod = todosLosProductos.find(x => x.id === p.id);
+            const precio = prod?.precio || 0;
+            return subtotal + (precio * p.cantidad);
+          }, 0);
+        }, 0);
+
+        document.getElementById("resumen-total").textContent = ` Total recaudado: $${totalGeneral}`;
+      });
+
+
+    //Convertir tabla a PDF
+
+    document.getElementById("exportar-pdf").addEventListener("click", () => {
+      const botonesEliminar = document.querySelectorAll("td:last-child button");
+      botonesEliminar.forEach(btn => btn.style.display = "none");
+
+      const elemento = document.getElementById("tabla-ventas");
+      const opt = {
+        margin: 0.5,
+        filename: 'ventas.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(elemento).save().then(() => {
+        botonesEliminar.forEach(btn => btn.style.display = "inline-block");
+      });
+    });
+
+  </script>
+</body>
+
+</html>

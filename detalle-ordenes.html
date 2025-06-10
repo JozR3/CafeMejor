@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Detalle de Órdenes</title>
+  <link rel="stylesheet" href="./main.css">
+  <style>
+    .contenedor {
+      padding: 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th,
+    td {
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--clr-main);
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrapper">
+    <aside>
+      <a href="./index.html" class="boton-menu">
+        <i class="bi bi-arrow-return-left"></i> Volver
+      </a>
+      <h2>Detalle Órdenes</h2>
+    </aside>
+    <main class="contenedor">
+      <h2>Productos por Orden</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>N° Orden</th>
+            <th>ID</th>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody id="detalle-tabla">
+        </tbody>
+      </table>
+    </main>
+  </div>
+
+  <script>
+    const isAdmin = localStorage.getItem("isAdmin") === "true";
+    if (!isAdmin) {
+      alert("Acceso denegado");
+      location.href = "index.html";
+    }
+
+    const detalle = JSON.parse(localStorage.getItem("detalle-ordenes")) || [];
+    const tbody = document.getElementById("detalle-tabla");
+
+    // Agrupar por nombre de producto
+    const agrupado = detalle.reduce((acc, item) => {
+      if (!acc[item.nombre]) acc[item.nombre] = [];
+      acc[item.nombre].push(item);
+      return acc;
+    }, {});
+
+    Object.keys(agrupado).forEach(nombre => {
+      agrupado[nombre].forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item.numero}</td>
+          <td>${item.id}</td>
+          <td>${item.nombre}</td>
+          <td>${item.cantidad}</td>
+          <td>$${item.precio}</td>
+          <td>$${item.subtotal}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+  </script>
+</body>
+
+</html>
