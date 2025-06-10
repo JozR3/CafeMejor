@@ -1,5 +1,17 @@
 let productos = [];
+const admin = {
+  nombre: "Administrador",
+  correo: "admin@admin.com",
+  password: "admin123",
+  isAdmin: true
+};
+const usuarios = JSON.parse(localStorage.getItem("usuarios")) || [];
+const existeAdmin = usuarios.some(u => u.correo === admin.correo && u.isAdmin);
 
+if (!existeAdmin) {
+  usuarios.push(admin);
+  localStorage.setItem("usuarios", JSON.stringify(usuarios));
+}
 fetch("./productos.json")
   .then(response => response.json())
   .then(data => {
